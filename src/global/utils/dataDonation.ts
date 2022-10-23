@@ -1,30 +1,34 @@
 import { DATA_DONATION_URL, DATA_DONATION_PUBLIC_KEY } from '../custom';
 
 export let baseUrl = DATA_DONATION_URL;
-export let rawPublicKey = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1O2IB+zQH01J6MW+ZpyH/lENnr1ny9et
-GHi7H2xvo/l4yeJXIQg0H8rJfp59wxtEL0YnOzB9SFByNEwoDsd7D03PvLOhth6605Yp9Tk2mTxf
-9YFdXD+voWhjInvl+2X+Ny8OUctdOS1P/3GOBn4+AHBd6QCyMxRUljOx7khzTkWckPafk6Ft9k1W
-zkVso0ID+Yr553g4VOn8UBIYP/61x5GP/WlWvUnKnQw5x+gXEYEBW0uJ5zNqkh/AB851SWsWCoPz
-D2PiHKGrUygRVSzjZa1fJhP+fa/29SxWnH6IiEmrVXHyTYkZ4gVYTLX31cKv6yM9w4BcgCe2Gy65
-vyP63QIDAQAB
------END PUBLIC KEY-----`; //DATA_DONATION_PUBLIC_KEY;
 
-donateAnswers({ test: 'test' }).then((request) => {
-  console.log('send');
-});
+export let rawPublicKey = DATA_DONATION_PUBLIC_KEY;
+
+// Only use for Development:
+// rawPublicKey = `-----BEGIN PUBLIC KEY-----
+// MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1O2IB+zQH01J6MW+ZpyH/lENnr1ny9et
+// GHi7H2xvo/l4yeJXIQg0H8rJfp59wxtEL0YnOzB9SFByNEwoDsd7D03PvLOhth6605Yp9Tk2mTxf
+// 9YFdXD+voWhjInvl+2X+Ny8OUctdOS1P/3GOBn4+AHBd6QCyMxRUljOx7khzTkWckPafk6Ft9k1W
+// zkVso0ID+Yr553g4VOn8UBIYP/61x5GP/WlWvUnKnQw5x+gXEYEBW0uJ5zNqkh/AB851SWsWCoPz
+// D2PiHKGrUygRVSzjZa1fJhP+fa/29SxWnH6IiEmrVXHyTYkZ4gVYTLX31cKv6yM9w4BcgCe2Gy65
+// vyP63QIDAQAB
+// -----END PUBLIC KEY-----`;
+
+// donateAnswers({ test: 'test' }).then((request) => {
+//   console.log('send');
+// });
+
 export function donateAnswers(answers: any): Promise<undefined> {
   // Make sure it is ending with a slash
   if (!baseUrl.endsWith('/')) baseUrl = baseUrl + '/';
 
-  // If a public key is supplied then encrypt the data with the public key.
+  // If a public key is supplied then encrypt the data with the public key before sending it to the server
   // Because the JSON can get quite big we encrypt the answers with AES before and only encrypt the AES key with the public key.
   // Much Code from https://github.com/diafygi/webcrypto-examples/
   if (rawPublicKey) {
+    // Load RSA Key from variable
     importRsaKey(rawPublicKey)
       .then(function (publicKey) {
-        console.log(publicKey);
-
         // Generate AES key for this data donation.
         window.crypto.subtle
           .generateKey(
@@ -32,15 +36,13 @@ export function donateAnswers(answers: any): Promise<undefined> {
               name: 'AES-GCM',
               length: 256,
             },
-            true, //whether the key is extractable (i.e. can be used in exportKey)
+            true, //whether the key is extractable, used in exportKey
             ['encrypt', 'decrypt']
           )
-          .then(function (key) {
-            //returns a key object
-            console.log(key);
-            var iv = window.crypto.getRandomValues(new Uint8Array(12))
-
+          .then(function (aesKey) {
+            var iv = window.crypto.getRandomValues(new Uint8Array(12));
             var enc = new TextEncoder();
+
             // Encrypt donated Data
             window.crypto.subtle
               .encrypt(
@@ -51,23 +53,14 @@ export function donateAnswers(answers: any): Promise<undefined> {
                   //Recommended to use 12 bytes length
                   iv: iv,
                 },
-                key, //from generateKey or importKey above
-                enc.encode(JSON.stringify(answers)) //ArrayBuffer of data you want to encrypt
+                aesKey,
+                enc.encode(JSON.stringify(answers)) // data you want to encrypt
               )
               .then(function (encryptedAnswers) {
-                var answer: any = {
-                  encryptedAnswers: base64ArrayBuffer(encryptedAnswers),
-                };
-
                 window.crypto.subtle
-                  .exportKey(
-                    'raw', //can be "jwk" or "raw"
-                    key //extractable must be true
-                  )
+                  .exportKey('raw', aesKey)
                   .then(function (aesPrivateKey) {
-                    //returns the exported key data
-                    console.log(aesPrivateKey);
-
+                    // Encrypt AES Key
                     window.crypto.subtle
                       .encrypt(
                         {
@@ -78,14 +71,13 @@ export function donateAnswers(answers: any): Promise<undefined> {
                         aesPrivateKey //ArrayBuffer of data you want to encrypt
                       )
                       .then(function (encryptedAesKey) {
-                        //returns an ArrayBuffer containing the encrypted data
-                        answer = {
-                          ...answer,
+                        // Tie everything together to one JSON Request and send it
+                        var answer: any = {
+                          encryptedAnswers: base64ArrayBuffer(encryptedAnswers),
                           encryptedKey: base64ArrayBuffer(encryptedAesKey),
                           iv: base64ArrayBuffer(iv),
                           signingKey: rawPublicKey,
                         };
-                        console.log(new Uint8Array(encryptedAesKey));
                         sendData(baseUrl, answer);
                       })
                       .catch(function (err) {
@@ -109,7 +101,7 @@ export function donateAnswers(answers: any): Promise<undefined> {
       });
   }
 
-  // TODO: Encrypt Request #127
+  // Send data unencrypted
   return sendData(baseUrl, answers);
 }
 
