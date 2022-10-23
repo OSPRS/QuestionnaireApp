@@ -198,7 +198,7 @@ const {
   DATA4LIFE_IOS_BASEURL,
   WHITELISTED_DATA4LIFE_ORIGINS,
   DATA_DONATION_URL,
-  DATA_DONATION_PUBLIC_KEY
+  DATA_DONATION_PUBLIC_KEY,
 } = process.env;
 const supportedLanguages = SUPPORTED_LANGUAGES
   ? SUPPORTED_LANGUAGES.split(',')
@@ -209,7 +209,7 @@ const dataDonationUrl =
 const dataDonationPublicKey =
   DATA_DONATION_PUBLIC_KEY == 'false'
     ? undefined
-    : DATA_DONATION_PUBLIC_KEY ?? undefined;
+    : DATA_DONATION_PUBLIC_KEY || undefined;
 
 const translations = getTranslations(supportedLanguages);
 const logo = tryToReadLogo();
