@@ -74,7 +74,8 @@ jobs:
       - id: get-comment-body
         if: github.event_name == 'pull_request'
         run: |
-          cat storage-selection.txt | xargs -L1 -I@ echo " - [@](https://@.z16.web.core.windows.net)" >> $GITHUB_OUTPUT
+          output="$(cat storage-selection.txt | xargs -L1 -I@ echo ' - [@](https://@.z16.web.core.windows.net)')"
+          echo "body=$output" >> $GITHUB_OUTPUT
 
       - name: Create comment
         if: ${{ steps.fc.outputs.comment-id == 0  && github.event_name == 'pull_request'}}
