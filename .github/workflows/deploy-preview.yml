@@ -74,7 +74,7 @@ jobs:
       - id: get-comment-body
         if: github.event_name == 'pull_request'
         run: |
-          body="$(cat storage-selection.txt | xargs -L1 -I@ echo ' - [@](https://@.z16.web.core.windows.net)')"
+          body="$(cat storage-selection.txt | xargs -L1 -I@ echo ' - [@](https://@.z13.web.core.windows.net)')"
           delimiter="$(openssl rand -hex 8)"
           echo "body<<$delimiter" >> $GITHUB_OUTPUT
           echo "$body" >> $GITHUB_OUTPUT
