@@ -205,7 +205,7 @@ const supportedLanguages = SUPPORTED_LANGUAGES
   : ['de', 'en'];
 
 const dataDonationUrl =
-  DATA_DONATION_URL == 'false' ? undefined : DATA_DONATION_URL ?? '/api/donate';
+  DATA_DONATION_URL == 'false' ? undefined : DATA_DONATION_URL || '/api/donate';
 const dataDonationPublicKey =
   DATA_DONATION_PUBLIC_KEY == 'false'
     ? undefined
