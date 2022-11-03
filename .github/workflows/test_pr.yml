@@ -1,25 +1,29 @@
 name: Test PR
 
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
       - staging
 
 jobs:
-  install:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v1
         with:
           node-version: '13.x'
-      - name: Install and Test
+      - name: Run Unit Tests
         run: npm ci && npm run prepare-customization && npm run test:all
         env:
           PANDEMIC_TRACKING_URL: 'dummy'
 
-      - run: rm -r -f www && npm run prepare-charite && npm run build-charite
+      - name: Build App for Cypress Tests
+        run: rm -r -f www && npm run prepare-charite && npm run build-charite
 
       - name: Save build folder
         uses: actions/upload-artifact@v3
@@ -34,7 +38,7 @@ jobs:
     container:
       image: cypress/browsers:node16.13.0-chrome95-ff94
       options: --user 1001
-    needs: install
+    needs: build
     strategy:
       # when one test fails, DO NOT cancel the other
       # containers, because this will kill Cypress processes
@@ -89,7 +93,7 @@ jobs:
     container:
       image: cypress/browsers:node16.13.0-chrome95-ff94
       options: --user 1001
-    needs: install
+    needs: build
     strategy:
       # when one test fails, DO NOT cancel the other
       # containers, because this will kill Cypress processes
@@ -135,7 +139,7 @@ jobs:
     container:
       image: cypress/browsers:node16.13.0-chrome95-ff94
       options: --user 1001
-    needs: install
+    needs: build
     strategy:
       # when one test fails, DO NOT cancel the other
       # containers, because this will kill Cypress processes
@@ -180,7 +184,7 @@ jobs:
     container:
       image: cypress/browsers:node16.13.0-chrome95-ff94
       options: --user 1001
-    needs: install
+    needs: build
     strategy:
       # when one test fails, DO NOT cancel the other
       # containers, because this will kill Cypress processes
