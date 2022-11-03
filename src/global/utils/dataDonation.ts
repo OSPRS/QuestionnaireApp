@@ -99,10 +99,10 @@ export function donateAnswers(answers: any): Promise<undefined> {
       .catch(function (err) {
         console.error(err);
       });
+  } else {
+    // Send data unencrypted
+    return sendData(baseUrl, answers);
   }
-
-  // Send data unencrypted
-  return sendData(baseUrl, answers);
 }
 
 function sendData(baseUrl, data) {
