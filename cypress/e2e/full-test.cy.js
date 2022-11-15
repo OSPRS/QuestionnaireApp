@@ -11,7 +11,11 @@ describe('original_questionnaire', () => {
       expect('Unexpected Https call').to.be.false;
     }).as('dataDonation');
 
-    cy.visit('http://localhost:3333');
+    cy.visit('http://localhost:3333', {
+      onBeforeLoad: (win) => {
+        win.sessionStorage.clear();
+      },
+    });
     cy.contains('Start questionnaire').click();
     cy.contains('button_disclaimer_continue').click();
     cy.wait('@getQuestionnaire');
